@@ -1,41 +1,40 @@
 package ru.rsreu.savushkin.boids_simulation.state;
 
-import boids_simulation.entity.Entity;
-
-import java.util.Collections;
-import java.util.Map;
+import ru.rsreu.savushkin.boids_simulation.model.Fish;
+import ru.rsreu.savushkin.boids_simulation.model.Predator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Разделяемый ресурс: Хранит все сущности в симуляции.
- * Использование ConcurrentHashMap обеспечивает потокобезопасность
- * при операциях добавления, удаления и обновления.
- */
 public class GameField {
-    // Используем ConcurrentHashMap для потокобезопасного доступа к сущностям.
-    // Ключ - уникальный ID сущности, Значение - сама сущность.
-    private final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
+    private final List<Fish> fishes = new CopyOnWriteArrayList<>(); // Thread-safe list для рыб
+    private Predator predator;
+    private final AtomicInteger fishCount = new AtomicInteger(0);
 
-    /**
-     * Добавляет сущность на игровое поле.
-     */
-    public void addEntity(Entity entity) {
-        entities.put(entity.getId(), entity);
+    public void addFish(Fish fish) {
+        fishes.add(fish);
+        fishCount.incrementAndGet();
     }
 
-    /**
-     * Удаляет сущность с игрового поля (например, когда рыбка съедена).
-     */
-    public void removeEntity(int id) {
-        entities.remove(id);
+    public void removeFish(Fish fish) {
+        fishes.remove(fish);
+        fishCount.decrementAndGet();
     }
 
-    /**
-     * Возвращает неизменяемое представление всех сущностей.
-     * Это позволяет потокам-задачам читать данные без риска
-     * получить исключение ConcurrentModificationException.
-     */
-    public Map<Integer, Entity> getAllEntities() {
-        return Collections.unmodifiableMap(entities);
+    public void setPredator(Predator predator) {
+        this.predator = predator;
+    }
+
+    public List<Fish> getFishes() {
+        return fishes;
+    }
+
+    public Predator getPredator() {
+        return predator;
+    }
+
+    public int getFishCount() {
+        return fishCount.get();
     }
 }
