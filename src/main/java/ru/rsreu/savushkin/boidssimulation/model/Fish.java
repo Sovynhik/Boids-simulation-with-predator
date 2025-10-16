@@ -1,4 +1,3 @@
-// model/Fish.java
 package ru.rsreu.savushkin.boidssimulation.model;
 
 import ru.rsreu.savushkin.boidssimulation.state.GameField;
@@ -17,20 +16,23 @@ public class Fish extends Entity {
     private static final double COHESION_WEIGHT = 1.0;
     private static final double AVOIDANCE_WEIGHT = 2.0;
 
-    private final GameField field; // Ссылка на поле для доступа к соседям
+    private final GameField field;
 
     public Fish(double x, double y, GameField field) {
         super(x, y, FISH_SPEED);
         this.field = field;
+        this.vx = Math.random() * 2 - 1;
+        this.vy = Math.random() * 2 - 1;
+        normalizeSpeed();
     }
 
     @Override
     public void update() {
         List<Fish> neighbors = getNeighbors();
 
-        double sepX = 0, sepY = 0; // Separation
-        double alignX = 0, alignY = 0; // Alignment
-        double cohX = 0, cohY = 0; // Cohesion
+        double sepX = 0, sepY = 0;
+        double alignX = 0, alignY = 0;
+        double cohX = 0, cohY = 0;
         int count = 0;
 
         for (Fish other : neighbors) {
@@ -62,7 +64,6 @@ public class Fish extends Entity {
             cohY = (cohY / count - y) / 100;
         }
 
-        // Avoidance хищника
         Predator predator = field.getPredator();
         if (predator != null) {
             double px = x - predator.getX();
@@ -87,6 +88,6 @@ public class Fish extends Entity {
     }
 
     private List<Fish> getNeighbors() {
-        return field.getFishes(); // Оптимизировать для радиуса позже
+        return field.getFishes();
     }
 }

@@ -1,39 +1,46 @@
 package ru.rsreu.savushkin.boidssimulation.state;
 
+import ru.rsreu.savushkin.boidssimulation.controller.SimulationController;
 import ru.rsreu.savushkin.boidssimulation.model.Fish;
 import ru.rsreu.savushkin.boidssimulation.model.Predator;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class GameField {
-    private final List<Fish> fishes = new CopyOnWriteArrayList<>(); // Thread-safe list для рыб
+    private final List<Fish> fishes = new ArrayList<>();
     private Predator predator;
-    private final AtomicInteger fishCount = new AtomicInteger(0);
+    private SimulationController controller;
 
-    public void addFish(Fish fish) {
-        fishes.add(fish);
-        fishCount.incrementAndGet();
+    public void setController(SimulationController controller) {
+        this.controller = controller;
     }
 
-    public void removeFish(Fish fish) {
+    public SimulationController getController() {
+        return controller;
+    }
+
+    public synchronized void addFish(Fish fish) {
+        fishes.add(fish);
+    }
+
+    public synchronized void removeFish(Fish fish) {
         fishes.remove(fish);
-        fishCount.decrementAndGet();
+    }
+
+    public synchronized List<Fish> getFishes() {
+        return new ArrayList<>(fishes);
+    }
+
+    public synchronized int getFishCount() {
+        return fishes.size();
     }
 
     public void setPredator(Predator predator) {
         this.predator = predator;
     }
 
-    public List<Fish> getFishes() {
-        return fishes;
-    }
-
     public Predator getPredator() {
         return predator;
-    }
-
-    public int getFishCount() {
-        return fishCount.get();
     }
 }
