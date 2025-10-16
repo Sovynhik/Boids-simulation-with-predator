@@ -1,4 +1,3 @@
-// util/ProjectLogger.java
 package ru.rsreu.savushkin.boidssimulation.util;
 
 import java.io.File;
@@ -36,14 +35,13 @@ public class ProjectLogger {
 	private static Handler configureFileHandler() {
 		Handler handler = null;
 		try {
-			// Создаём директорию, если она не существует
 			File logDir = new File("./logs");
 			if (!logDir.exists()) {
 				logDir.mkdirs();
 			}
 
 			var formatter = new SimpleFormatter();
-			handler = new FileHandler("./logs/boids%u.log", false); // %u — уникальный номер
+			handler = new FileHandler("./logs/boids%u.log", false);
 			handler.setFormatter(formatter);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
@@ -59,7 +57,7 @@ public class ProjectLogger {
 	}
 
 	private static void setLogRecordFormat() {
-		System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tc] %5$s%n"); // Время + сообщение
+		System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tc] %5$s%n");
 		try {
 			LogManager.getLogManager().readConfiguration();
 		} catch (SecurityException | IOException e) {
