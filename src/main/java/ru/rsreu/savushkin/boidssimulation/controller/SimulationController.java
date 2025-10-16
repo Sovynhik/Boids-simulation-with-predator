@@ -19,7 +19,7 @@ public class SimulationController {
     private ExecutorService executor;
 
     public void initialize(int initialFish) {
-        field.setController(this); // Устанавливаем ссылку на контроллер
+        field.setController(this);
         field.setPredator(new Predator(400, 300, field));
         for (int i = 0; i < initialFish; i++) {
             Fish fish = new Fish(Math.random() * 800, Math.random() * 600, field);
