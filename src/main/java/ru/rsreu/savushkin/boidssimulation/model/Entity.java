@@ -1,34 +1,56 @@
+// model/Entity.java
 package ru.rsreu.savushkin.boidssimulation.model;
 
-import java.util.concurrent.ThreadLocalRandom;
+import ru.rsreu.savushkin.boidssimulation.util.ProjectLogger;
 
 public abstract class Entity {
-    protected double x, y; // Позиция
-    protected double vx, vy; // Скорость
+    protected double x;
+    protected double y;
+    protected double vx;
+    protected double vy;
     protected final double maxSpeed;
 
     public Entity(double x, double y, double maxSpeed) {
         this.x = x;
         this.y = y;
         this.maxSpeed = maxSpeed;
-        // Инициализация случайной скорости
-        vx = ThreadLocalRandom.current().nextDouble(-1, 1);
-        vy = ThreadLocalRandom.current().nextDouble(-1, 1);
-        normalizeSpeed();
+        this.vx = 0;
+        this.vy = 0;
     }
+
+    public abstract void update();
 
     protected void normalizeSpeed() {
         double speed = Math.sqrt(vx * vx + vy * vy);
-        if (speed > 0) {
+        if (speed > maxSpeed) {
             vx = (vx / speed) * maxSpeed;
             vy = (vy / speed) * maxSpeed;
         }
     }
 
-    public abstract void update(); // Логика движения
+    protected void reflectBoundaries() {
+        if (x < 0) {
+            x = 0;
+            vx = -vx;
+        } else if (x > 800) {
+            x = 800;
+            vx = -vx;
+        }
+        if (y < 0) {
+            y = 0;
+            vy = -vy;
+        } else if (y > 600) {
+            y = 600;
+            vy = -vy;
+        }
+    }
 
-    // Геттеры и сеттеры
+    protected void logPosition() {
+        ProjectLogger.logger.config("Entity at (" + x + ", " + y + ")");
+    }
+
     public double getX() { return x; }
     public double getY() { return y; }
-    public void setPosition(double x, double y) { this.x = x; this.y = y; }
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
 }
