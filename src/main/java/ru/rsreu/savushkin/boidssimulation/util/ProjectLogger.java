@@ -1,5 +1,7 @@
+// util/ProjectLogger.java
 package ru.rsreu.savushkin.boidssimulation.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -14,24 +16,38 @@ public class ProjectLogger {
 
 	private static Logger configureLogger() {
 		ProjectLogger.setLogRecordFormat();
-		var logger = Logger.getLogger("ru.rsreu.savushkin.boids_simulation");
-		logger.setLevel(Level.CONFIG);
+		var logger = Logger.getLogger("ru.rsreu.savushkin.boidssimulation"); // Обновлён для нового пакета
+		logger.setLevel(Level.CONFIG); // Для файла
 		logger.setUseParentHandlers(false);
+
 		Handler handler = ProjectLogger.configureConsoleHandler();
-		logger.addHandler(handler);
+		if (handler != null) {
+			logger.addHandler(handler);
+		}
+
 		handler = ProjectLogger.configureFileHandler();
-		logger.addHandler(handler);
+		if (handler != null) {
+			logger.addHandler(handler);
+		}
+
 		return logger;
 	}
 
 	private static Handler configureFileHandler() {
 		Handler handler = null;
 		try {
+			// Создаём директорию, если она не существует
+			File logDir = new File("./logs");
+			if (!logDir.exists()) {
+				logDir.mkdirs();
+			}
+
 			var formatter = new SimpleFormatter();
-			handler = new FileHandler("./logs/boids%u.log", false);
+			handler = new FileHandler("./logs/boids%u.log", false); // %u — уникальный номер
 			handler.setFormatter(formatter);
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
+			System.err.println("Failed to configure file handler: " + e.getMessage());
 		}
 		return handler;
 	}
@@ -43,7 +59,7 @@ public class ProjectLogger {
 	}
 
 	private static void setLogRecordFormat() {
-		System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tc] %5$s%n");
+		System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tc] %5$s%n"); // Время + сообщение
 		try {
 			LogManager.getLogManager().readConfiguration();
 		} catch (SecurityException | IOException e) {
