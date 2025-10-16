@@ -1,7 +1,7 @@
-package ru.rsreu.savushkin.boids_simulation.task;
+package ru.rsreu.savushkin.boidssimulation.task;
 
-import ru.rsreu.savushkin.boids_simulation.model.Fish;
-import ru.rsreu.savushkin.boids_simulation.state.GameField;
+import ru.rsreu.savushkin.boidssimulation.model.Fish;
+import ru.rsreu.savushkin.boidssimulation.state.GameField;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

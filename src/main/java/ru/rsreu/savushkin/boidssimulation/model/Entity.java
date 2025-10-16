@@ -1,4 +1,4 @@
-package ru.rsreu.savushkin.boids_simulation.model;
+package ru.rsreu.savushkin.boidssimulation.model;
 
 import java.util.concurrent.ThreadLocalRandom;
 

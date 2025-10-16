@@ -1,9 +1,8 @@
-package ru.rsreu.savushkin.boids_simulation.state;
+package ru.rsreu.savushkin.boidssimulation.state;
 
-import ru.rsreu.savushkin.boids_simulation.model.Fish;
-import ru.rsreu.savushkin.boids_simulation.model.Predator;
+import ru.rsreu.savushkin.boidssimulation.model.Fish;
+import ru.rsreu.savushkin.boidssimulation.model.Predator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 

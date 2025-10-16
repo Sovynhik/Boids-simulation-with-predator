@@ -1,4 +1,4 @@
-package ru.rsreu.savushkin.boids_simulation.model;
+package ru.rsreu.savushkin.boidssimulation.model;
 
 public class Fish extends Entity {
     private static final double FISH_SPEED = 2.0;

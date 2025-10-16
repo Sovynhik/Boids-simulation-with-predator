@@ -1,11 +1,11 @@
-package ru.rsreu.savushkin.boids_simulation;
+package ru.rsreu.savushkin.boidssimulation;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import ru.rsreu.savushkin.boids_simulation.state.GameField;
+import ru.rsreu.savushkin.boidssimulation.state.GameField;
 
 public class ClientRunner extends Application {
     @Override

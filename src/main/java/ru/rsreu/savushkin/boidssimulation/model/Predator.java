@@ -1,4 +1,4 @@
-package ru.rsreu.savushkin.boids_simulation.model;
+package ru.rsreu.savushkin.boidssimulation.model;
 
 public class Predator extends Entity {
     private static final double PREDATOR_SPEED = 3.0;
