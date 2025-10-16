@@ -20,9 +20,8 @@ public class FishTask implements Runnable {
     public void run() {
         while (isRunning.get()) {
             fish.update();
-            // Здесь позже добавить логику Boids на основе field.getFishes() и predator
             try {
-                Thread.sleep(50); // Задержка для симуляции
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }

@@ -1,4 +1,3 @@
-// model/Entity.java
 package ru.rsreu.savushkin.boidssimulation.model;
 
 import ru.rsreu.savushkin.boidssimulation.util.ProjectLogger;
@@ -46,7 +45,10 @@ public abstract class Entity {
     }
 
     protected void logPosition() {
-        ProjectLogger.logger.config("Entity at (" + x + ", " + y + ")");
+        ProjectLogger.logger.config("Predator updated: x=" + String.format("%.2f", x) +
+                ", y=" + String.format("%.2f", y) +
+                ", vx=" + String.format("%.2f", vx) +
+                ", vy=" + String.format("%.2f", vy));
     }
 
     public double getX() { return x; }
