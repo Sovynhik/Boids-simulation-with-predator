@@ -1,26 +1,15 @@
 package ru.rsreu.savushkin.boidssimulation;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
-import ru.rsreu.savushkin.boidssimulation.state.GameField;
+import ru.rsreu.savushkin.boidssimulation.controller.SimulationController;
+import ru.rsreu.savushkin.boidssimulation.util.ProjectLogger;
+import ru.rsreu.savushkin.boidssimulation.view.SimulationView;
 
-public class ClientRunner extends Application {
-    @Override
-    public void start(Stage primaryStage) {
-        GameField field = new GameField();
-        // Инициализация (добавьте рыб и хищника)
-        Canvas canvas = new Canvas(800, 600);
-        StackPane root = new StackPane(canvas);
-        Scene scene = new Scene(root, 800, 600);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-        // Здесь добавить Controller для запуска потоков
-    }
-
+public class ClientRunner {
     public static void main(String[] args) {
-        launch(args);
+        ProjectLogger.logger.info("Application starting");
+        SimulationController controller = new SimulationController();
+        SimulationView view = new SimulationView(controller);
+        view.initialize();
+        ProjectLogger.logger.info("Application initialized");
     }
 }
