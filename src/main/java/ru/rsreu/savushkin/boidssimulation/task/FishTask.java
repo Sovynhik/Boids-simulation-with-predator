@@ -1,7 +1,7 @@
-package ru.rsreu.savushkin.boids_simulation.task;
+package ru.rsreu.savushkin.boidssimulation.task;
 
-import ru.rsreu.savushkin.boids_simulation.model.Fish;
-import ru.rsreu.savushkin.boids_simulation.state.GameField;
+import ru.rsreu.savushkin.boidssimulation.model.Fish;
+import ru.rsreu.savushkin.boidssimulation.state.GameField;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,9 +20,8 @@ public class FishTask implements Runnable {
     public void run() {
         while (isRunning.get()) {
             fish.update();
-            // Здесь позже добавить логику Boids на основе field.getFishes() и predator
             try {
-                Thread.sleep(50); // Задержка для симуляции
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
