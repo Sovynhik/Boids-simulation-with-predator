@@ -1,6 +1,5 @@
 package ru.rsreu.savushkin.boidssimulation.view;
 
-import ru.rsreu.savushkin.boidssimulation.controller.SimulationController;
 import ru.rsreu.savushkin.boidssimulation.util.ProjectLogger;
 
 import javax.swing.*;
