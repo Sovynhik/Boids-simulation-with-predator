@@ -1,4 +1,4 @@
 package ru.rsreu.savushkin.boidssimulation.event;
 
-public class EventListener implements Listener {
+public class Event {
 }
