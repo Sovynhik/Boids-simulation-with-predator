@@ -1,18 +1,11 @@
 package ru.rsreu.savushkin.boidssimulation.model;
 
-public class Model {
-    private Listeners listeners;
+import ru.rsreu.savushkin.boidssimulation.event.SimulationListener;
 
-    public void changeState() {
-        Event event = new Event();
-        this.notifyListeners(event);
-    }
-
-    public void addListener(Listener listener) {
-
-    }
-
-    private void notifyListeners(Event event) {
-        this.listeners.notify(Event);
-    }
+public interface Model {
+    void startSimulation();
+    void pauseSimulation();
+    void stopSimulation();
+    GameField getGameField();
+    void addSimulationListener(SimulationListener listener);
 }
