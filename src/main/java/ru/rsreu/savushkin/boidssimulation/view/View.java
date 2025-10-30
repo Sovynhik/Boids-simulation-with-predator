@@ -1,21 +1,46 @@
 package ru.rsreu.savushkin.boidssimulation.view;
 
-import ru.rsreu.savushkin.boidssimulation.controller.Controller;
-import ru.rsreu.savushkin.boidssimulation.event.Event;
-import ru.rsreu.savushkin.boidssimulation.event.Listener;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
-public class View implements Listener {
-    private Controller controller;
+public class View extends JFrame {
+    private final Controller controller;
+    private final GamePanel panel;
 
-    public void initialize() {
-        this.controller.addListener(this);
+    public View(Controller controller) {
+        this.controller = controller;
+        setTitle("Boids Simulation with Predator (Push)");
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setSize(1000, 700);
+        setLocationRelativeTo(null);
+
+        panel = new GamePanel(controller.getField());
+        add(panel, BorderLayout.CENTER);
+
+        JPanel controls = new JPanel();
+        JButton startBtn = new JButton("Старт");
+        JButton pauseBtn = new JButton("Пауза");
+        JButton stopBtn = new JButton("Стоп");
+
+        startBtn.addActionListener(e -> controller.start());
+        pauseBtn.addActionListener(e -> controller.pause());
+        stopBtn.addActionListener(e -> controller.stop());
+
+        controls.add(startBtn); controls.add(pauseBtn); controls.add(stopBtn);
+        add(controls, BorderLayout.SOUTH);
+
+        controller.addListener(() -> SwingUtilities.invokeLater(panel::repaint));
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                controller.stop();
+                dispose();
+            }
+        });
+
+        setVisible(true);
     }
-
-    private void displayState (Event event) {
-    }
-
-    @Override
-    public void handle(Event event) {
-        this.displayState(event);
-        }
 }
