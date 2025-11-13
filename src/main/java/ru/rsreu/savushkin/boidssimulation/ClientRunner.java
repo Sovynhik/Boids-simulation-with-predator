@@ -1,14 +1,13 @@
 package ru.rsreu.savushkin.boidssimulation;
 
-import ru.rsreu.savushkin.boidssimulation.controller.Controller;
-import ru.rsreu.savushkin.boidssimulation.model.Model;
+import ru.rsreu.savushkin.boidssimulation.controller.SimulationController;
 import ru.rsreu.savushkin.boidssimulation.model.SimulationModel;
-import ru.rsreu.savushkin.boidssimulation.view.View;
+import ru.rsreu.savushkin.boidssimulation.view.SimulationView;
 
 public class ClientRunner {
     public static void main(String[] args) {
-            Model model = new SimulationModel();
-            Controller controller = new Controller(model);
-            new View(controller);
+        SimulationModel model = new SimulationModel();
+        SimulationController controller = new SimulationController(model);
+        new SimulationView(controller);
     }
 }
