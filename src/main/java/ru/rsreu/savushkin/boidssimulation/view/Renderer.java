@@ -102,7 +102,7 @@ public class Renderer {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Consolas", Font.BOLD, 14));
         g.drawString("Рыбок: " + fishCount, 10, 20);
-        g.drawString("FPS: ~60", 10, 40);
+        //g.drawString("FPS: ~60", 10, 40);
         g.drawString("SPACE — пауза | ESC — меню", 10, Settings.GAME_FIELD_HEIGHT - 10);
     }
 }

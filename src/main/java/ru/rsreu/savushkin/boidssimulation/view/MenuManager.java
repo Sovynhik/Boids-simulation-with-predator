@@ -15,7 +15,6 @@ public class MenuManager {
         this.mainMenuPanel = createMainMenu();
         this.pauseMenuPanel = createPauseMenu();
 
-        // Изначально скрываем паузу
         pauseMenuPanel.setVisible(false);
     }
 
