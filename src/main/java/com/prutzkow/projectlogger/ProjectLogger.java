@@ -47,12 +47,31 @@ public final class ProjectLogger {
     /** Запись в файл */
     private static Handler createFileHandler() {
         try {
-            FileHandler handler = new FileHandler("BoidsSimulation%u.log", true); // %u — уникальный номер
+            String logDir = "logs";
+            java.io.File dir = new java.io.File(logDir);
+            if (!dir.exists()) {
+                dir.mkdirs(); // ← создаёт папку logs
+            }
+
+            FileHandler handler = new FileHandler(logDir + "/BoidsSimulation%u.log", true);
             handler.setLevel(Level.CONFIG);
-            handler.setFormatter(new SimpleFormatter());
+            handler.setFormatter(new SimpleFormatter() {
+                @Override
+                public String format(LogRecord record) {
+                    String className = record.getSourceClassName();
+                    if (className != null) {
+                        className = className.substring(className.lastIndexOf('.') + 1);
+                    }
+                    return String.format("[%1$tF %1$tT] [%2$s] %3$s - %4$s%n",
+                            new java.util.Date(record.getMillis()),
+                            record.getLevel(),
+                            className,
+                            record.getMessage());
+                }
+            });
             return handler;
         } catch (IOException | SecurityException e) {
-            e.printStackTrace();
+            System.err.println("Не удалось создать лог-файл: " + e.getMessage());
             return null;
         }
     }
