@@ -1,86 +1,127 @@
 package ru.rsreu.savushkin.boidssimulation.model;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
-import ru.rsreu.savushkin.boidssimulation.entity.Entity;
-import ru.rsreu.savushkin.boidssimulation.entity.Fish;
-import ru.rsreu.savushkin.boidssimulation.entity.Predator;
-import ru.rsreu.savushkin.boidssimulation.event.SimulationListener;
-import ru.rsreu.savushkin.boidssimulation.task.FishBehaviorTask;
-import ru.rsreu.savushkin.boidssimulation.task.PredatorBehaviorTask;
-import ru.rsreu.savushkin.boidssimulation.task.RespawnControllerTask;
-import ru.rsreu.savushkin.boidssimulation.task.SimulationLoopTask;
+import ru.rsreu.savushkin.boidssimulation.dto.SimulationSnapshot;
+import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
+import ru.rsreu.savushkin.boidssimulation.model.entity.*;
+import ru.rsreu.savushkin.boidssimulation.model.task.RespawnTask;
+import ru.rsreu.savushkin.boidssimulation.view.Subscriber;
 
-import java.awt.*;
-import java.beans.PropertyChangeSupport;
-import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
-public class SimulationModel implements Model {
-    private final GameField field = new GameField();
+public class SimulationModel {
+    private final Set<Subscriber> subscribers = Collections.synchronizedSet(new HashSet<>());
+    private final CopyOnWriteArrayList<AbstractEntity> entities = new CopyOnWriteArrayList<>();
+    private Predator predator;
+    private volatile boolean simulationOver = true;
+    private volatile boolean paused = false;
 
-    private final AtomicBoolean isRunning = new AtomicBoolean(false);
-    private final AtomicBoolean isPaused = new AtomicBoolean(false);
-    private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-    private ExecutorService executor;
+    private RespawnTask respawnTask;
+    private static int idCounter = 0;
 
-    private static final Logger log = com.prutzkow.projectlogger.ProjectLogger.logger;
-
-    public SimulationModel() {
-        Random r = new Random();
+    public synchronized void startNewSimulation() {
+        entities.clear();
+        predator = new Predator(++idCounter, randomPoint());
+        entities.add(predator);
         for (int i = 0; i < Settings.INITIAL_FISH_COUNT; i++) {
-            field.addFish(new Fish(new Point(r.nextInt(Settings.GAME_FIELD_WIDTH), r.nextInt(Settings.GAME_FIELD_HEIGHT))));
+            entities.add(new Fish(++idCounter, randomPoint()));
         }
+        simulationOver = false;
+        paused = false;
+        startRespawnTask();
     }
 
-    @Override
-    public void startSimulation() {
-        if (isRunning.get()) return;
-        isRunning.set(true);
-        isPaused.set(false);
+    public synchronized void loadSimulation(SimulationState state) {
+        entities.clear();
+        predator = state.getPredator();
+        if (predator != null) entities.add(predator);
+        state.getFishes().forEach(entities::add);
+        simulationOver = false;
+        paused = false;
+        startRespawnTask();
+    }
 
-        executor = Executors.newCachedThreadPool();
+    public void finishSimulation() {
+        simulationOver = true;
+        if (respawnTask != null) respawnTask.cancel();
+    }
 
-        for (Entity e : field.getEntities()) {
-            if (e instanceof Fish) {
-                executor.submit(new FishBehaviorTask((Fish)e, field, isRunning));
-            } else if (e instanceof Predator) {
-                executor.submit(new PredatorBehaviorTask((Predator)e, field, isRunning));
+    public void switchPause() {
+        paused = !paused;
+        if (respawnTask != null) respawnTask.setPaused(paused);
+    }
+
+    public void subscribe(Subscriber s) { subscribers.add(s); }
+
+    public void update() {
+        if (simulationOver || paused) return;
+
+        SimulationSnapshot snapshot = createSnapshot();
+
+        // Параллельное поведение
+        entities.parallelStream().forEach(e -> e.calculateBehavior(snapshot));
+
+        // Движение
+        entities.forEach(e -> e.moveAndBounce(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT));
+
+        // СТОЛКНОВЕНИЯ — ИСПРАВЛЕНО: без iterator.remove()
+        applyCollisions();
+
+        // Уведомление
+        subscribers.forEach(Subscriber::notifySubscriber);
+    }
+
+    private SimulationSnapshot createSnapshot() {
+        return new SimulationSnapshot(
+                new ArrayList<>(entities),
+                predator,
+                Settings.GAME_FIELD_WIDTH,
+                Settings.GAME_FIELD_HEIGHT
+        );
+    }
+
+    // ИСПРАВЛЕНО: Удаление через removeAll()
+    private void applyCollisions() {
+        if (predator == null) return;
+
+        List<AbstractEntity> toRemove = new ArrayList<>();
+        for (AbstractEntity e : entities) {
+            if (e instanceof Fish && predator.distanceTo(e) < Settings.EAT_RADIUS) {
+                toRemove.add(e);
             }
         }
-
-        executor.submit(new RespawnControllerTask(field, isRunning, executor));
-        executor.submit(new SimulationLoopTask(this, isRunning, isPaused));
-
-        log.info("Simulation start.");
+        entities.removeAll(toRemove); // Безопасно для CopyOnWriteArrayList
     }
 
-    @Override
-    public void pauseSimulation() {
-        isPaused.set(!isPaused.get());
-        log.info(isPaused.get() ? "Pause" : "Continue");
+    private void startRespawnTask() {
+        if (respawnTask != null) respawnTask.cancel();
+        respawnTask = new RespawnTask(this);
+        new Thread(respawnTask).start();
     }
 
-    @Override
-    public void stopSimulation() {
-        isRunning.set(false);
-        if (executor != null) executor.shutdownNow();
-        log.info("Simulation stop.");
+    private java.awt.Point randomPoint() {
+        Random r = new Random();
+        return new java.awt.Point(r.nextInt(Settings.GAME_FIELD_WIDTH), r.nextInt(Settings.GAME_FIELD_HEIGHT));
     }
 
-    @Override
-    public GameField getGameField() { return field; }
-
-    @Override
-    public void addSimulationListener(SimulationListener listener) {
-        pcs.addPropertyChangeListener("updated", evt -> listener.onSimulationUpdated());
+    public SimulationState getSimulationState() {
+        Set<Fish> fishes = entities.stream()
+                .filter(e -> e instanceof Fish)
+                .map(e -> (Fish) e.clone())
+                .collect(Collectors.toSet());
+        Predator pred = predator != null ? (Predator) predator.clone() : null;
+        return SimulationState.Builder.newBuilder()
+                .fishes(fishes)
+                .predator(pred)
+                .field(new Field(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT))
+                .simulationOver(simulationOver)
+                .build();
     }
 
-    public void fireSimulationUpdated() {
-        pcs.firePropertyChange("updated", false, true);
-    }
-
-    public boolean isPaused() { return isPaused.get(); }
+    public List<AbstractEntity> getEntities() { return List.copyOf(entities); }
+    public int getFishCount() { return (int) entities.stream().filter(e -> e instanceof Fish).count(); }
+    public void addEntity(AbstractEntity e) { entities.add(e); }
+    public boolean isSimulationOver() { return simulationOver; }
 }
