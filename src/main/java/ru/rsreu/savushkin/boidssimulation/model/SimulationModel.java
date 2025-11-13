@@ -17,7 +17,6 @@ public class SimulationModel {
     private Predator predator;
     private volatile boolean simulationOver = true;
     private volatile boolean paused = false;
-
     private RespawnTask respawnTask;
     private static int idCounter = 0;
 
@@ -53,23 +52,21 @@ public class SimulationModel {
         if (respawnTask != null) respawnTask.setPaused(paused);
     }
 
-    public void subscribe(Subscriber s) { subscribers.add(s); }
+    public void subscribe(Subscriber s) {
+        subscribers.add(s);
+    }
 
     public void update() {
         if (simulationOver || paused) return;
 
         SimulationSnapshot snapshot = createSnapshot();
 
-        // Параллельное поведение
         entities.parallelStream().forEach(e -> e.calculateBehavior(snapshot));
 
-        // Движение
         entities.forEach(e -> e.moveAndBounce(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT));
 
-        // СТОЛКНОВЕНИЯ — ИСПРАВЛЕНО: без iterator.remove()
         applyCollisions();
 
-        // Уведомление
         subscribers.forEach(Subscriber::notifySubscriber);
     }
 
@@ -82,7 +79,6 @@ public class SimulationModel {
         );
     }
 
-    // ИСПРАВЛЕНО: Удаление через removeAll()
     private void applyCollisions() {
         if (predator == null) return;
 
@@ -92,7 +88,7 @@ public class SimulationModel {
                 toRemove.add(e);
             }
         }
-        entities.removeAll(toRemove); // Безопасно для CopyOnWriteArrayList
+        entities.removeAll(toRemove);
     }
 
     private void startRespawnTask() {

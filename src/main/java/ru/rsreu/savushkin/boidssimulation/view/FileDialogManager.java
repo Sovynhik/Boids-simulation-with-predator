@@ -33,12 +33,10 @@ public class FileDialogManager {
                 SimulationState state = (SimulationState) FileUtils.load(file);
                 view.getController().loadSimulation(state);
 
-                // Скрываем меню
                 view.setShowMainMenu(false);
                 view.setShowPauseMenu(false);
-                view.updateMenu(); // КРИТИЧНО!
+                view.updateMenu();
 
-                // Запускаем симуляцию
                 SimulationModel model = view.getController().getModel();
                 SimulationLoop loop = new SimulationLoop(model);
                 Thread thread = new Thread(loop);

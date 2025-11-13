@@ -22,7 +22,6 @@ public final class Settings {
 
     public static final int FISH_SIZE = 6;
     public static final int PREDATOR_SIZE = 14;
-    public static final int TARGET_FPS = 60;
     public static final int TICK_DELAY = 16;
 
     public static final Color BACKGROUND_COLOR = new Color(10, 25, 50);
@@ -32,7 +31,6 @@ public final class Settings {
     public static final boolean SHOW_RESPAWN_ZONE = true;
     public static final boolean DEBUG_SHOW_RADII = true;
 
-    // SAVE
     public static final String SAVE_EXTENSION = "sav";
     public static final String DOT_SAVE_EXTENSION = ".sav";
     public static final String SAVE_FILE_PREFIX = "save_";

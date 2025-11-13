@@ -30,7 +30,6 @@ public class SimulationView extends JPanel implements Subscriber {
         this.fileDialog = new FileDialogManager(this);
         initUI();
 
-        // Инициализация видимости меню
         updateMenu();
     }
 
@@ -121,7 +120,6 @@ public class SimulationView extends JPanel implements Subscriber {
         g2d.dispose();
     }
 
-    // Геттеры
     public SimulationController getController() { return controller; }
     public boolean isShowMainMenu() { return showMainMenu; }
     public boolean isShowPauseMenu() { return showPauseMenu; }

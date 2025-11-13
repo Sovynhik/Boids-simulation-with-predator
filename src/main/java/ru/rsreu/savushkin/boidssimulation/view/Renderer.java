@@ -11,27 +11,22 @@ import java.awt.geom.Ellipse2D;
 public class Renderer {
 
     public void render(Graphics2D g, SimulationState state) {
-        // Фон
         g.setColor(Settings.BACKGROUND_COLOR);
         g.fillRect(0, 0, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
 
-        // Зона респавна
         if (Settings.SHOW_RESPAWN_ZONE) {
             g.setColor(Settings.RESPAWN_ZONE_COLOR);
             g.fillRect(0, 0, Settings.RESPAWN_ZONE_SIZE, Settings.RESPAWN_ZONE_SIZE);
         }
 
-        // Рыбки
         for (Fish fish : state.getFishes()) {
             drawFish(g, fish);
         }
 
-        // Хищник
         if (state.getPredator() != null) {
             drawPredator(g, state.getPredator());
         }
 
-        // Статистика
         drawStats(g, state.getFishes().size());
     }
 
@@ -39,13 +34,11 @@ public class Renderer {
         Point p = fish.getPosition();
         int size = Settings.FISH_SIZE;
 
-        // Тело
         g.setColor(Settings.FISH_COLOR);
         g.fill(new Ellipse2D.Double(p.x - size / 2, p.y - size / 2, size, size));
 
-        // Направление (глаз)
         double vx = fish.getVelocityX();
-        double vy = fish.getVelocityY();  // ИСПРАВЛЕНО: getVelocityY()
+        double vy = fish.getVelocityY();
         double mag = Math.hypot(vx, vy);
 
         if (mag > 0.1) {
@@ -70,7 +63,7 @@ public class Renderer {
         g.fill(new Ellipse2D.Double(p.x - size / 2, p.y - size / 2, size, size));
 
         double vx = predator.getVelocityX();
-        double vy = predator.getVelocityY();  // ИСПРАВЛЕНО: getVelocityY()
+        double vy = predator.getVelocityY();
         double mag = Math.hypot(vx, vy);
 
         if (mag > 0.1) {
