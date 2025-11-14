@@ -22,7 +22,7 @@ public final class Settings {
 
     public static final int FISH_SIZE = 6;
     public static final int PREDATOR_SIZE = 14;
-    public static final int TICK_DELAY = 16;
+    public static final long ENTITY_TICK_DELAY = 16;
 
     public static final Color BACKGROUND_COLOR = new Color(10, 25, 50);
     public static final Color FISH_COLOR = new Color(80, 200, 255);
