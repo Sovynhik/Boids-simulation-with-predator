@@ -2,8 +2,6 @@ package ru.rsreu.savushkin.boidssimulation.view;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
-import ru.rsreu.savushkin.boidssimulation.model.SimulationLoop;
-import ru.rsreu.savushkin.boidssimulation.model.SimulationModel;
 import ru.rsreu.savushkin.boidssimulation.util.FileUtils;
 
 import javax.swing.*;
@@ -37,10 +35,7 @@ public class FileDialogManager {
                 view.setShowPauseMenu(false);
                 view.updateMenu();
 
-                SimulationModel model = view.getController().getModel();
-                SimulationLoop loop = new SimulationLoop(model);
-                Thread thread = new Thread(loop);
-                thread.start();
+                view.repaint();
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(view, "Ошибка загрузки: " + ex.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);

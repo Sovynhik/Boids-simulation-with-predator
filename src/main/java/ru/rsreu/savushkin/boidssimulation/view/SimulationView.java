@@ -3,10 +3,11 @@ package ru.rsreu.savushkin.boidssimulation.view;
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.controller.SimulationController;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
-import ru.rsreu.savushkin.boidssimulation.model.SimulationLoop;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SimulationView extends JPanel implements Subscriber {
     private final SimulationController controller;
@@ -14,9 +15,6 @@ public class SimulationView extends JPanel implements Subscriber {
     private final InputManager inputManager;
     private final Renderer renderer;
     private final FileDialogManager fileDialog;
-
-    private SimulationLoop simulationLoop;
-    private Thread simulationThread;
 
     private volatile SimulationState state;
     private volatile boolean showMainMenu = true;
@@ -29,7 +27,6 @@ public class SimulationView extends JPanel implements Subscriber {
         this.renderer = new Renderer();
         this.fileDialog = new FileDialogManager(this);
         initUI();
-
         updateMenu();
     }
 
@@ -51,7 +48,21 @@ public class SimulationView extends JPanel implements Subscriber {
         frame.setVisible(true);
 
         controller.subscribeOnModel(this);
+
+        startUpdateTimer();
+
         SwingUtilities.invokeLater(this::requestFocusInWindow);
+    }
+
+    private void startUpdateTimer() {
+        new Timer(true).scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (!showMainMenu && !showPauseMenu && !controller.getModel().isSimulationOver()) {
+                    controller.getModel().update();
+                }
+            }
+        }, 0, Settings.ENTITY_TICK_DELAY);
     }
 
     public void startNew() {
@@ -59,11 +70,6 @@ public class SimulationView extends JPanel implements Subscriber {
         showPauseMenu = false;
         updateMenu();
         controller.startSimulation();
-
-        simulationLoop = new SimulationLoop(controller.getModel());
-        simulationThread = new Thread(simulationLoop);
-        simulationThread.start();
-
         repaint();
     }
 
@@ -80,11 +86,6 @@ public class SimulationView extends JPanel implements Subscriber {
         showPauseMenu = false;
         updateMenu();
         controller.stopSimulation();
-
-        if (simulationThread != null && simulationThread.isAlive()) {
-            simulationThread.interrupt();
-            simulationThread = null;
-        }
         repaint();
     }
 

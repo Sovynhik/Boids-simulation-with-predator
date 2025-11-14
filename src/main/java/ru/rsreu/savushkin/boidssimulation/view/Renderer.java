@@ -2,8 +2,8 @@ package ru.rsreu.savushkin.boidssimulation.view;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
-import ru.rsreu.savushkin.boidssimulation.model.entity.Fish;
-import ru.rsreu.savushkin.boidssimulation.model.entity.Predator;
+import ru.rsreu.savushkin.boidssimulation.model.entity.FishEntity;
+import ru.rsreu.savushkin.boidssimulation.model.entity.PredatorEntity;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -19,7 +19,7 @@ public class Renderer {
             g.fillRect(0, 0, Settings.RESPAWN_ZONE_SIZE, Settings.RESPAWN_ZONE_SIZE);
         }
 
-        for (Fish fish : state.getFishes()) {
+        for (FishEntity fish : state.getFishes()) {
             drawFish(g, fish);
         }
 
@@ -30,7 +30,7 @@ public class Renderer {
         drawStats(g, state.getFishes().size());
     }
 
-    private void drawFish(Graphics2D g, Fish fish) {
+    private void drawFish(Graphics2D g, FishEntity fish) {
         Point p = fish.getPosition();
         int size = Settings.FISH_SIZE;
 
@@ -52,10 +52,12 @@ public class Renderer {
             g.fillOval(eyeX - 1, eyeY - 1, 2, 2);
         }
 
-        if (Settings.DEBUG_SHOW_RADII) drawDebugRadii(g, p, Settings.FISH_COLOR);
+        if (Settings.DEBUG_SHOW_RADII) {
+            drawDebugRadii(g, p, Settings.FISH_COLOR);
+        }
     }
 
-    private void drawPredator(Graphics2D g, Predator predator) {
+    private void drawPredator(Graphics2D g, PredatorEntity predator) {
         Point p = predator.getPosition();
         int size = Settings.PREDATOR_SIZE;
 
@@ -83,7 +85,9 @@ public class Renderer {
             g.fillOval(eye2X - 1, eye2Y - 1, 3, 3);
         }
 
-        if (Settings.DEBUG_SHOW_RADII) drawPanicRadius(g, p);
+        if (Settings.DEBUG_SHOW_RADII) {
+            drawPanicRadius(g, p);
+        }
     }
 
     private void drawDebugRadii(Graphics2D g, Point p, Color base) {
@@ -102,7 +106,6 @@ public class Renderer {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Consolas", Font.BOLD, 14));
         g.drawString("Рыбок: " + fishCount, 10, 20);
-        //g.drawString("FPS: ~60", 10, 40);
         g.drawString("SPACE — пауза | ESC — меню", 10, Settings.GAME_FIELD_HEIGHT - 10);
     }
 }
