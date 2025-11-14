@@ -4,11 +4,12 @@ import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationSnapshot;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
 import ru.rsreu.savushkin.boidssimulation.model.entity.*;
+import ru.rsreu.savushkin.boidssimulation.model.task.EntityTask;
 import ru.rsreu.savushkin.boidssimulation.model.task.RespawnTask;
 import ru.rsreu.savushkin.boidssimulation.view.Subscriber;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class SimulationModel {
@@ -18,6 +19,7 @@ public class SimulationModel {
     private volatile boolean simulationOver = true;
     private volatile boolean paused = false;
     private RespawnTask respawnTask;
+    private ExecutorService executor;
     private static int idCounter = 0;
 
     public synchronized void startNewSimulation() {
@@ -29,6 +31,15 @@ public class SimulationModel {
         }
         simulationOver = false;
         paused = false;
+
+        // Создаём пул потоков (не более 16)
+        int poolSize = Math.min(16, Runtime.getRuntime().availableProcessors() * 2);
+        executor = Executors.newFixedThreadPool(poolSize, r -> {
+            Thread t = new Thread(r, "Entity-Worker-" + r.hashCode());
+            t.setDaemon(true);
+            return t;
+        });
+
         startRespawnTask();
     }
 
@@ -39,12 +50,23 @@ public class SimulationModel {
         state.getFishes().forEach(entities::add);
         simulationOver = false;
         paused = false;
+
+        int poolSize = Math.min(16, Runtime.getRuntime().availableProcessors() * 2);
+        executor = Executors.newFixedThreadPool(poolSize, r -> {
+            Thread t = new Thread(r, "Entity-Worker-" + r.hashCode());
+            t.setDaemon(true);
+            return t;
+        });
+
         startRespawnTask();
     }
 
     public void finishSimulation() {
         simulationOver = true;
         if (respawnTask != null) respawnTask.cancel();
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
     }
 
     public void switchPause() {
@@ -57,16 +79,33 @@ public class SimulationModel {
     }
 
     public void update() {
-        if (simulationOver || paused) return;
+        if (simulationOver || paused || executor == null) return;
 
         SimulationSnapshot snapshot = createSnapshot();
 
-        entities.parallelStream().forEach(e -> e.calculateBehavior(snapshot));
+        List<Future<AbstractEntity>> futures = entities.stream()
+                .map(e -> executor.submit(new EntityTask(e, snapshot)))
+                .toList();
 
-        entities.forEach(e -> e.moveAndBounce(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT));
+        List<AbstractEntity> updated = new ArrayList<>();
+        AbstractEntity newPredator = null;
+
+        for (Future<AbstractEntity> f : futures) {
+            try {
+                AbstractEntity entity = f.get(100, TimeUnit.MILLISECONDS);
+                updated.add(entity);
+                if (entity instanceof Predator) {
+                    newPredator = entity;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        this.predator = (Predator) newPredator;
+
+        entities.clear();
+        entities.addAll(updated);
 
         applyCollisions();
-
         subscribers.forEach(Subscriber::notifySubscriber);
     }
 
