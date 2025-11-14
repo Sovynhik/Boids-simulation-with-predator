@@ -14,11 +14,6 @@ public class Renderer {
         g.setColor(Settings.BACKGROUND_COLOR);
         g.fillRect(0, 0, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
 
-        if (Settings.SHOW_RESPAWN_ZONE) {
-            g.setColor(Settings.RESPAWN_ZONE_COLOR);
-            g.fillRect(0, 0, Settings.RESPAWN_ZONE_SIZE, Settings.RESPAWN_ZONE_SIZE);
-        }
-
         for (FishEntity fish : state.getFishes()) {
             drawFish(g, fish);
         }

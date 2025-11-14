@@ -9,13 +9,12 @@ public final class Settings {
     public static final double FISH_SPEED = 2.5;
     public static final double PREDATOR_SPEED = 3.8;
 
-    public static final int COHESION_RADIUS = 75;
+    public static final int COHESION_RADIUS = 100;
     public static final int SEPARATION_RADIUS = 15;
     public static final int ALIGNMENT_RADIUS = 60;
     public static final int PANIC_RADIUS = 110;
     public static final int EAT_RADIUS = 12;
 
-    public static final int RESPAWN_ZONE_SIZE = 100;
     public static final int GAME_FIELD_WIDTH = 600;
     public static final int GAME_FIELD_HEIGHT = 500;
     public static final Dimension GAME_FIELD_DIMENSION = new Dimension(GAME_FIELD_WIDTH, GAME_FIELD_HEIGHT);
@@ -27,9 +26,16 @@ public final class Settings {
     public static final Color BACKGROUND_COLOR = new Color(10, 25, 50);
     public static final Color FISH_COLOR = new Color(80, 200, 255);
     public static final Color PREDATOR_COLOR = new Color(220, 20, 20);
-    public static final Color RESPAWN_ZONE_COLOR = new Color(0, 200, 100, 40);
-    public static final boolean SHOW_RESPAWN_ZONE = true;
     public static final boolean DEBUG_SHOW_RADII = true;
+
+
+    public static final double SEPARATION_WEIGHT = 2.2;
+    public static final double ALIGNMENT_WEIGHT = 1.2;
+    public static final double COHESION_WEIGHT = 0.35;
+    public static final double JITTER_STRENGTH = 0.8;
+
+    public static final double BOUNDARY_AVOIDANCE_FORCE = 1.8;
+    public static final int BOUNDARY_AVOIDANCE_RADIUS = 50;
 
     public static final String SAVE_EXTENSION = "sav";
     public static final String DOT_SAVE_EXTENSION = ".sav";

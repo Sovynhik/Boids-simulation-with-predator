@@ -127,7 +127,7 @@ public class SimulationModel {
         int fishCount = getFishCount();
         if (fishCount < Settings.FISH_RESPAWN_THRESHOLD) {
             for (int i = 0; i < Settings.FISH_RESPAWN_AMOUNT; i++) {
-                FishEntity fish = new FishEntity(++idCounter, randomPointInRespawnZone(), this);
+                FishEntity fish = new FishEntity(++idCounter, randomPointOnField(), this);
                 entities.add(fish);
                 fish.start();
             }
@@ -146,11 +146,6 @@ public class SimulationModel {
 
     private PredatorEntity createPredator() {
         return new PredatorEntity(++idCounter, randomPointOnField(), this);
-    }
-
-    private Point randomPointInRespawnZone() {
-        Random r = new Random();
-        return new Point(r.nextInt(Settings.RESPAWN_ZONE_SIZE), r.nextInt(Settings.RESPAWN_ZONE_SIZE));
     }
 
     private Point randomPointOnField() {
