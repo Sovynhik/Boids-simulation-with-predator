@@ -21,8 +21,8 @@ public class RespawnTask implements Runnable {
             if (paused.get()) { try { Thread.sleep(100); } catch (InterruptedException e) { break; } continue; }
             if (model.getFishCount() < Settings.FISH_RESPAWN_THRESHOLD) {
                 for (int i = 0; i < Settings.FISH_RESPAWN_AMOUNT; i++) {
-                    int x = RAND.nextInt(Settings.RESPAWN_ZONE_SIZE);
-                    int y = RAND.nextInt(Settings.RESPAWN_ZONE_SIZE);
+                    int x = RAND.nextInt();
+                    int y = RAND.nextInt();
                     model.addEntity(new FishEntity(0, new java.awt.Point(x, y), model));
                 }
             }

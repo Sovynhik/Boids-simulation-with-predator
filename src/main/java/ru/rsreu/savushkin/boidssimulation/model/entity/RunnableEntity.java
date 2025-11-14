@@ -41,7 +41,12 @@ public abstract class RunnableEntity implements Runnable, Cloneable {
             try {
                 SimulationSnapshot snapshot = getCurrentSnapshot();
                 calculateBehavior(snapshot);
-                moveAndBounce(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
+
+                position.x += (int) vx;
+                position.y += (int) vy;
+
+                clipToBounds(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
+
                 Thread.sleep(Settings.ENTITY_TICK_DELAY);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -50,23 +55,32 @@ public abstract class RunnableEntity implements Runnable, Cloneable {
         }
     }
 
-    protected abstract SimulationSnapshot getCurrentSnapshot();
-    public abstract void calculateBehavior(SimulationSnapshot snapshot);
+    protected void applyBoundaryAvoidance() {
+        double avoidForce = Settings.BOUNDARY_AVOIDANCE_FORCE;
+        double avoidRadius = Settings.BOUNDARY_AVOIDANCE_RADIUS;
 
-    protected void moveAndBounce(int w, int h) {
-        double nx = position.x + vx;
-        double ny = position.y + vy;
+        double bx = 0, by = 0;
 
-        if (nx < 0 || nx > w) {
-            vx = -vx;
-            nx = Math.max(0, Math.min(nx, w));
+        if (position.x < avoidRadius) {
+            bx += (avoidRadius - position.x) / avoidRadius;
         }
-        if (ny < 0 || ny > h) {
-            vy = -vy;
-            ny = Math.max(0, Math.min(ny, h));
+        if (position.x > Settings.GAME_FIELD_WIDTH - avoidRadius) {
+            bx -= (avoidRadius - (Settings.GAME_FIELD_WIDTH - position.x)) / avoidRadius;
+        }
+        if (position.y < avoidRadius) {
+            by += (avoidRadius - position.y) / avoidRadius;
+        }
+        if (position.y > Settings.GAME_FIELD_HEIGHT - avoidRadius) {
+            by -= (avoidRadius - (Settings.GAME_FIELD_HEIGHT - position.y)) / avoidRadius;
         }
 
-        position.setLocation((int) nx, (int) ny);
+        vx += bx * avoidForce;
+        vy += by * avoidForce;
+    }
+
+    protected void clipToBounds(int w, int h) {
+        position.x = Math.max(0, Math.min((int)position.x, w));
+        position.y = Math.max(0, Math.min((int)position.y, h));
     }
 
     protected void normalizeAndSetVelocity(double dx, double dy) {
@@ -74,11 +88,30 @@ public abstract class RunnableEntity implements Runnable, Cloneable {
         if (mag > 1e-6) {
             vx = (dx / mag) * speed;
             vy = (dy / mag) * speed;
+
+            double maxSpeed = speed * 1.3;
+            double currentSpeed = Math.hypot(vx, vy);
+            if (currentSpeed > maxSpeed) {
+                vx = (vx / currentSpeed) * maxSpeed;
+                vy = (vy / currentSpeed) * maxSpeed;
+            }
+
+            double minSpeed = speed * 0.6;
+            if (currentSpeed < minSpeed) {
+                double dirX = vx / (currentSpeed + 1e-6);
+                double dirY = vy / (currentSpeed + 1e-6);
+                vx = dirX * minSpeed;
+                vy = dirY * minSpeed;
+            }
         } else {
             vx = (Math.random() - 0.5) * speed;
             vy = (Math.random() - 0.5) * speed;
         }
     }
+
+
+    protected abstract SimulationSnapshot getCurrentSnapshot();
+    public abstract void calculateBehavior(SimulationSnapshot snapshot);
 
     public double distanceTo(RunnableEntity other) {
         return position.distance(other.position);

@@ -73,8 +73,45 @@ public class FishEntity extends RunnableEntity implements Serializable {
             cohY = (cohY / cohCount) - position.y;
         }
 
-        double vx = sepX * 1.5 + alignX * 1.0 + cohX * 0.8;
-        double vy = sepY * 1.5 + alignY * 1.0 + cohY * 0.8;
+        double vx = sepX * Settings.SEPARATION_WEIGHT +
+                alignX * Settings.ALIGNMENT_WEIGHT +
+                cohX * Settings.COHESION_WEIGHT;
+
+        double vy = sepY * Settings.SEPARATION_WEIGHT +
+                alignY * Settings.ALIGNMENT_WEIGHT +
+                cohY * Settings.COHESION_WEIGHT;
+
+        if (alignCount > 10) {
+            vx += (alignX - vx) * 1.5;
+            vy += (alignY - vy) * 1.5;
+        }
+
+        if (sepCount > 8) {
+            double centerX = 0, centerY = 0;
+            int closeCount = 0;
+            for (var e : others) {
+                if (distanceTo(e) < Settings.SEPARATION_RADIUS * 1.5) {
+                    centerX += e.position.x;
+                    centerY += e.position.y;
+                    closeCount++;
+                }
+            }
+            if (closeCount > 0) {
+                centerX /= closeCount; centerY /= closeCount;
+                double awayX = position.x - centerX;
+                double awayY = position.y - centerY;
+                double dist = Math.hypot(awayX, awayY);
+                if (dist < 15) {
+                    vx += awayX * 0.3;
+                    vy += awayY * 0.3;
+                }
+            }
+        }
+
+        vx += (Math.random() - 0.5) * Settings.JITTER_STRENGTH;
+        vy += (Math.random() - 0.5) * Settings.JITTER_STRENGTH;
+
+        applyBoundaryAvoidance();
 
         normalizeAndSetVelocity(vx, vy);
     }
