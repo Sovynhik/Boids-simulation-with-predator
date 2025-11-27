@@ -1,9 +1,8 @@
 package ru.rsreu.savushkin.boidssimulation.view;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
+import ru.rsreu.savushkin.boidssimulation.dto.EntityDTO;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
-import ru.rsreu.savushkin.boidssimulation.model.entity.FishEntity;
-import ru.rsreu.savushkin.boidssimulation.model.entity.PredatorEntity;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
@@ -14,7 +13,7 @@ public class Renderer {
         g.setColor(Settings.BACKGROUND_COLOR);
         g.fillRect(0, 0, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
 
-        for (FishEntity fish : state.getFishes()) {
+        for (EntityDTO.FishDTO fish : state.getFishes()) {
             drawFish(g, fish);
         }
 
@@ -25,15 +24,15 @@ public class Renderer {
         drawStats(g, state.getFishes().size());
     }
 
-    private void drawFish(Graphics2D g, FishEntity fish) {
-        Point p = fish.getPosition();
+    private void drawFish(Graphics2D g, EntityDTO.FishDTO fish) {
+        Point p = fish.position();
         int size = Settings.FISH_SIZE;
 
         g.setColor(Settings.FISH_COLOR);
-        g.fill(new Ellipse2D.Double(p.x - size / 2, p.y - size / 2, size, size));
+        g.fill(new Ellipse2D.Double(p.x - size / 2.0, p.y - size / 2.0, size, size));
 
-        double vx = fish.getVelocityX();
-        double vy = fish.getVelocityY();
+        double vx = fish.vx();
+        double vy = fish.vy();
         double mag = Math.hypot(vx, vy);
 
         if (mag > 0.1) {
@@ -52,15 +51,15 @@ public class Renderer {
         }
     }
 
-    private void drawPredator(Graphics2D g, PredatorEntity predator) {
-        Point p = predator.getPosition();
+    private void drawPredator(Graphics2D g, EntityDTO.PredatorDTO predator) {
+        Point p = predator.position();
         int size = Settings.PREDATOR_SIZE;
 
         g.setColor(Settings.PREDATOR_COLOR);
-        g.fill(new Ellipse2D.Double(p.x - size / 2, p.y - size / 2, size, size));
+        g.fill(new Ellipse2D.Double(p.x - size / 2.0, p.y - size / 2.0, size, size));
 
-        double vx = predator.getVelocityX();
-        double vy = predator.getVelocityY();
+        double vx = predator.vx();
+        double vy = predator.vy();
         double mag = Math.hypot(vx, vy);
 
         if (mag > 0.1) {
@@ -87,14 +86,18 @@ public class Renderer {
 
     private void drawDebugRadii(Graphics2D g, Point p, Color base) {
         g.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), 40));
-        g.drawOval(p.x - Settings.COHESION_RADIUS, p.y - Settings.COHESION_RADIUS, Settings.COHESION_RADIUS * 2, Settings.COHESION_RADIUS * 2);
-        g.drawOval(p.x - Settings.ALIGNMENT_RADIUS, p.y - Settings.ALIGNMENT_RADIUS, Settings.ALIGNMENT_RADIUS * 2, Settings.ALIGNMENT_RADIUS * 2);
-        g.drawOval(p.x - Settings.SEPARATION_RADIUS, p.y - Settings.SEPARATION_RADIUS, Settings.SEPARATION_RADIUS * 2, Settings.SEPARATION_RADIUS * 2);
+        g.drawOval(p.x - Settings.COHESION_RADIUS, p.y - Settings.COHESION_RADIUS,
+                Settings.COHESION_RADIUS * 2, Settings.COHESION_RADIUS * 2);
+        g.drawOval(p.x - Settings.ALIGNMENT_RADIUS, p.y - Settings.ALIGNMENT_RADIUS,
+                Settings.ALIGNMENT_RADIUS * 2, Settings.ALIGNMENT_RADIUS * 2);
+        g.drawOval(p.x - Settings.SEPARATION_RADIUS, p.y - Settings.SEPARATION_RADIUS,
+                Settings.SEPARATION_RADIUS * 2, Settings.SEPARATION_RADIUS * 2);
     }
 
     private void drawPanicRadius(Graphics2D g, Point p) {
         g.setColor(new Color(255, 50, 50, 40));
-        g.drawOval(p.x - Settings.PANIC_RADIUS, p.y - Settings.PANIC_RADIUS, Settings.PANIC_RADIUS * 2, Settings.PANIC_RADIUS * 2);
+        g.drawOval(p.x - Settings.PANIC_RADIUS, p.y - Settings.PANIC_RADIUS,
+                Settings.PANIC_RADIUS * 2, Settings.PANIC_RADIUS * 2);
     }
 
     private void drawStats(Graphics2D g, int fishCount) {

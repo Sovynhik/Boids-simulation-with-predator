@@ -21,7 +21,7 @@ public final class Settings {
 
     public static final int FISH_SIZE = 6;
     public static final int PREDATOR_SIZE = 14;
-    public static final long ENTITY_TICK_DELAY = 16;
+    public static final int ENTITY_TICK_DELAY = 16;
 
     public static final Color BACKGROUND_COLOR = new Color(10, 25, 50);
     public static final Color FISH_COLOR = new Color(80, 200, 255);
@@ -33,9 +33,6 @@ public final class Settings {
     public static final double ALIGNMENT_WEIGHT = 1.2;
     public static final double COHESION_WEIGHT = 0.35;
     public static final double JITTER_STRENGTH = 0.8;
-
-    public static final double BOUNDARY_AVOIDANCE_FORCE = 1.8;
-    public static final int BOUNDARY_AVOIDANCE_RADIUS = 50;
 
     public static final String SAVE_EXTENSION = "sav";
     public static final String DOT_SAVE_EXTENSION = ".sav";
