@@ -1,7 +1,7 @@
 package ru.rsreu.savushkin.boidssimulation.dto;
 
-import ru.rsreu.savushkin.boidssimulation.model.entity.RunnableEntity;
 import ru.rsreu.savushkin.boidssimulation.model.entity.PredatorEntity;
+import ru.rsreu.savushkin.boidssimulation.model.entity.RunnableEntity;
 
 import java.util.List;
 

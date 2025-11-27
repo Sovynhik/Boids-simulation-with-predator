@@ -6,8 +6,6 @@ import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class SimulationView extends JPanel implements Subscriber {
     private final SimulationController controller;
@@ -55,14 +53,11 @@ public class SimulationView extends JPanel implements Subscriber {
     }
 
     private void startUpdateTimer() {
-        new Timer(true).scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (!showMainMenu && !showPauseMenu && !controller.getModel().isSimulationOver()) {
-                    controller.getModel().update();
-                }
+        new javax.swing.Timer(Settings.ENTITY_TICK_DELAY, e -> {
+            if (!showMainMenu && !showPauseMenu && !controller.getModel().isSimulationOver()) {
+                controller.getModel().update();
             }
-        }, 0, Settings.ENTITY_TICK_DELAY);
+        }).start();
     }
 
     public void startNew() {

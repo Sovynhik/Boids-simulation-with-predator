@@ -2,50 +2,56 @@ package ru.rsreu.savushkin.boidssimulation.model.entity;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationSnapshot;
+import ru.rsreu.savushkin.boidssimulation.model.SimulationModel;
 
 import java.awt.Point;
 
-public abstract class RunnableEntity implements Runnable, Cloneable {
+public abstract class RunnableEntity implements Runnable {
     protected final int id;
-    protected Point position;
+    protected final Point position;
     protected double vx, vy;
     protected final double speed;
     private volatile boolean running = false;
     private Thread thread;
 
-    public RunnableEntity(int id, Point position, double speed) {
+    protected final SimulationModel model;
+
+    protected RunnableEntity(int id, Point position, double speed, SimulationModel model) {
         this.id = id;
         this.position = new Point(position);
         this.speed = speed;
-        this.vx = (Math.random() - 0.5) * speed;
-        this.vy = (Math.random() - 0.5) * speed;
+        this.model = model;
+
+        double angle = Math.random() * Math.PI * 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
     }
 
-    public void start() {
+    public final void start() {
         if (running) return;
         running = true;
         thread = new Thread(this, "Entity-" + id);
+        thread.setDaemon(true);
         thread.start();
     }
 
-    public void stop() {
+    public final void stop() {
         running = false;
-        if (thread != null) {
-            thread.interrupt();
-        }
+        if (thread != null) thread.interrupt();
     }
 
     @Override
-    public void run() {
-        while (running && !Thread.currentThread().isInterrupted()) {
+    public final void run() {
+        while (running && !Thread.interrupted()) {
             try {
-                SimulationSnapshot snapshot = getCurrentSnapshot();
+                SimulationSnapshot snapshot = model.createSnapshot();
                 calculateBehavior(snapshot);
 
-                position.x += (int) vx;
-                position.y += (int) vy;
+                position.x += vx;
+                position.y += vy;
 
-                clipToBounds(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
+                applyBoundaryAvoidance();
+                clipToBounds();
 
                 Thread.sleep(Settings.ENTITY_TICK_DELAY);
             } catch (InterruptedException e) {
@@ -56,62 +62,28 @@ public abstract class RunnableEntity implements Runnable, Cloneable {
     }
 
     protected void applyBoundaryAvoidance() {
-        double avoidForce = Settings.BOUNDARY_AVOIDANCE_FORCE;
-        double avoidRadius = Settings.BOUNDARY_AVOIDANCE_RADIUS;
-
-        double bx = 0, by = 0;
-
-        if (position.x < avoidRadius) {
-            bx += (avoidRadius - position.x) / avoidRadius;
-        }
-        if (position.x > Settings.GAME_FIELD_WIDTH - avoidRadius) {
-            bx -= (avoidRadius - (Settings.GAME_FIELD_WIDTH - position.x)) / avoidRadius;
-        }
-        if (position.y < avoidRadius) {
-            by += (avoidRadius - position.y) / avoidRadius;
-        }
-        if (position.y > Settings.GAME_FIELD_HEIGHT - avoidRadius) {
-            by -= (avoidRadius - (Settings.GAME_FIELD_HEIGHT - position.y)) / avoidRadius;
-        }
-
-        vx += bx * avoidForce;
-        vy += by * avoidForce;
+        double avoidStrength = speed * 0.8;
+        if (position.x < 50) vx += avoidStrength;
+        if (position.x > Settings.GAME_FIELD_WIDTH - 50) vx -= avoidStrength;
+        if (position.y < 50) vy += avoidStrength;
+        if (position.y > Settings.GAME_FIELD_HEIGHT - 50) vy -= avoidStrength;
     }
 
-    protected void clipToBounds(int w, int h) {
-        position.x = Math.max(0, Math.min((int)position.x, w));
-        position.y = Math.max(0, Math.min((int)position.y, h));
+    protected void clipToBounds() {
+        position.x = Math.max(20, Math.min(position.x, Settings.GAME_FIELD_WIDTH - 20));
+        position.y = Math.max(20, Math.min(position.y, Settings.GAME_FIELD_HEIGHT - 20));
     }
 
-    protected void normalizeAndSetVelocity(double dx, double dy) {
-        double mag = Math.hypot(dx, dy);
-        if (mag > 1e-6) {
-            vx = (dx / mag) * speed;
-            vy = (dy / mag) * speed;
-
-            double maxSpeed = speed * 1.3;
-            double currentSpeed = Math.hypot(vx, vy);
-            if (currentSpeed > maxSpeed) {
-                vx = (vx / currentSpeed) * maxSpeed;
-                vy = (vy / currentSpeed) * maxSpeed;
-            }
-
-            double minSpeed = speed * 0.6;
-            if (currentSpeed < minSpeed) {
-                double dirX = vx / (currentSpeed + 1e-6);
-                double dirY = vy / (currentSpeed + 1e-6);
-                vx = dirX * minSpeed;
-                vy = dirY * minSpeed;
-            }
+    protected void normalizeAndSetVelocity(double desiredVx, double desiredVy) {
+        double magnitude = Math.hypot(desiredVx, desiredVy);
+        if (magnitude > 0.001) {
+            vx = (desiredVx / magnitude) * speed;
+            vy = (desiredVy / magnitude) * speed;
         } else {
-            vx = (Math.random() - 0.5) * speed;
-            vy = (Math.random() - 0.5) * speed;
+            vx = 0;
+            vy = 0;
         }
     }
-
-
-    protected abstract SimulationSnapshot getCurrentSnapshot();
-    public abstract void calculateBehavior(SimulationSnapshot snapshot);
 
     public double distanceTo(RunnableEntity other) {
         return position.distance(other.position);
@@ -121,20 +93,10 @@ public abstract class RunnableEntity implements Runnable, Cloneable {
     public Point getPosition() { return new Point(position); }
     public double getVelocityX() { return vx; }
     public double getVelocityY() { return vy; }
-
     public void setVelocity(double vx, double vy) {
         this.vx = vx;
         this.vy = vy;
     }
 
-    @Override
-    public RunnableEntity clone() {
-        try {
-            RunnableEntity clone = (RunnableEntity) super.clone();
-            clone.position = new Point(this.position);
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    protected abstract void calculateBehavior(SimulationSnapshot snapshot);
 }
