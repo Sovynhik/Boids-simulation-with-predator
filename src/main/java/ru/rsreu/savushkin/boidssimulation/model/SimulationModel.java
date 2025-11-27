@@ -17,6 +17,8 @@ public class SimulationModel {
     private final Set<Subscriber> subscribers = Collections.synchronizedSet(new HashSet<>());
     private final CopyOnWriteArrayList<RunnableEntity> entities = new CopyOnWriteArrayList<>();
     private final AtomicInteger idCounter = new AtomicInteger(0);
+    private final List<Point> eatEffects = new CopyOnWriteArrayList<>();
+    private long lastEatEffectClear = System.currentTimeMillis();
 
     private volatile boolean simulationOver = true;
     private volatile boolean paused = false;
@@ -24,6 +26,7 @@ public class SimulationModel {
     public synchronized void startNewSimulation() {
         stopAllEntities();
         entities.clear();
+        eatEffects.clear();
 
         PredatorEntity predator = createPredator();
         entities.add(predator);
@@ -43,6 +46,7 @@ public class SimulationModel {
     public synchronized void loadSimulation(SimulationState state) {
         stopAllEntities();
         entities.clear();
+        eatEffects.clear();
 
         if (state.getPredator() != null) {
             var dto = state.getPredator();
@@ -67,6 +71,7 @@ public class SimulationModel {
     public void finishSimulation() {
         simulationOver = true;
         stopAllEntities();
+        eatEffects.clear();
         notifySubscribers();
     }
 
@@ -77,8 +82,10 @@ public class SimulationModel {
 
     public void update() {
         if (simulationOver || paused) return;
+
         applyCollisions();
         checkAndRespawnFish();
+        clearOldEatEffects(); // очищаем старые вспышки
         notifySubscribers();
     }
 
@@ -93,10 +100,13 @@ public class SimulationModel {
 
         List<RunnableEntity> toRemove = new ArrayList<>();
         for (RunnableEntity e : entities) {
-            if (e instanceof FishEntity && predator.distanceTo(e) < Settings.EAT_RADIUS) {
+            if (e instanceof FishEntity fish && predator.distanceTo(e) < Settings.EAT_RADIUS) {
                 toRemove.add(e);
+                // Добавляем эффект поедания!
+                eatEffects.add(new Point(fish.getPosition()));
             }
         }
+
         toRemove.forEach(e -> {
             e.stop();
             entities.remove(e);
@@ -115,6 +125,14 @@ public class SimulationModel {
         }
     }
 
+    private void clearOldEatEffects() {
+        long now = System.currentTimeMillis();
+        if (now - lastEatEffectClear > 800) { // каждые 800 мс чистим
+            eatEffects.clear();
+            lastEatEffectClear = now;
+        }
+    }
+
     private FishEntity createFish() {
         return new FishEntity(idCounter.incrementAndGet(), randomPointOnField(), this);
     }
@@ -125,7 +143,10 @@ public class SimulationModel {
 
     private Point randomPointOnField() {
         Random r = new Random();
-        return new Point(r.nextInt(Settings.GAME_FIELD_WIDTH), r.nextInt(Settings.GAME_FIELD_HEIGHT));
+        return new Point(
+                50 + r.nextInt(Settings.GAME_FIELD_WIDTH - 100),
+                50 + r.nextInt(Settings.GAME_FIELD_HEIGHT - 100)
+        );
     }
 
     private void stopAllEntities() {
@@ -181,9 +202,17 @@ public class SimulationModel {
                 .build();
     }
 
+    // Геттер для эффектов поедания
+    public List<Point> getEatEffects() {
+        return Collections.unmodifiableList(eatEffects);
+    }
+
     public void subscribe(Subscriber s) { subscribers.add(s); }
     private void notifySubscribers() { subscribers.forEach(Subscriber::notifySubscriber); }
 
     public boolean isSimulationOver() { return simulationOver; }
     public boolean isPaused() { return paused; }
+    public int getFishCount() {
+        return (int) entities.stream().filter(e -> e instanceof FishEntity).count();
+    }
 }

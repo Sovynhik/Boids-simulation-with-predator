@@ -3,107 +3,161 @@ package ru.rsreu.savushkin.boidssimulation.view;
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
 import ru.rsreu.savushkin.boidssimulation.dto.EntityDTO;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
+import ru.rsreu.savushkin.boidssimulation.model.SimulationModel;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.RoundRectangle2D;
 
 public class Renderer {
+    public void render(Graphics2D g, SimulationState state, SimulationModel model) {
+        long time = System.currentTimeMillis();
 
-    public void render(Graphics2D g, SimulationState state) {
-        g.setColor(Settings.BACKGROUND_COLOR);
-        g.fillRect(0, 0, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
+        // 1. Анимированный фон воды
+        drawWaterBackground(g, time);
 
+        // 2. Тени под всеми рыбами (объём!)
         for (EntityDTO.FishDTO fish : state.getFishes()) {
-            drawFish(g, fish);
+            drawFishShadow(g, fish);
         }
-
         if (state.getPredator() != null) {
-            drawPredator(g, state.getPredator());
+            drawPredatorShadow(g, state.getPredator());
         }
 
+        // 3. Рыбки с машущим хвостом и градиентом
+        for (EntityDTO.FishDTO fish : state.getFishes()) {
+            drawFish(g, fish, time);
+        }
+
+        // 4. Хищник — настоящая зубастая акула!
+        if (state.getPredator() != null) {
+            drawPredator(g, state.getPredator(), time);
+        }
+
+        // 5. Эффекты поедания (вспышки)
+        drawEatEffects(g, model);
+
+        // 6. Статистика
         drawStats(g, state.getFishes().size());
     }
 
-    private void drawFish(Graphics2D g, EntityDTO.FishDTO fish) {
+    private void drawWaterBackground(Graphics2D g, long time) {
+        g.setColor(new Color(10, 40, 100));
+        g.fillRect(0, 0, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
+
+        g.setColor(new Color(30, 100, 180, 80));
+        for (int y = 0; y < Settings.GAME_FIELD_HEIGHT + 100; y += 40) {
+            int offset = (int) (Math.sin((y + time * 0.06) * 0.015) * 30);
+            g.fillRect(-100 + offset, y, Settings.GAME_FIELD_WIDTH + 200, 20);
+        }
+    }
+
+    private void drawFishShadow(Graphics2D g, EntityDTO.FishDTO fish) {
         Point p = fish.position();
-        int size = Settings.FISH_SIZE;
+        g.setColor(new Color(0, 0, 0, 40));
+        g.fillOval(p.x - 20, p.y + 8, 40, 16);
+    }
 
-        g.setColor(Settings.FISH_COLOR);
-        g.fill(new Ellipse2D.Double(p.x - size / 2.0, p.y - size / 2.0, size, size));
+    private void drawPredatorShadow(Graphics2D g, EntityDTO.PredatorDTO predator) {
+        Point p = predator.position();
+        g.setColor(new Color(100, 0, 0, 60));
+        g.fillOval(p.x - 35, p.y + 15, 70, 25);
+    }
 
+    private void drawFish(Graphics2D g, EntityDTO.FishDTO fish, long time) {
+        Point p = fish.position();
         double vx = fish.vx();
         double vy = fish.vy();
-        double mag = Math.hypot(vx, vy);
+        double angle = Math.atan2(vy, vx);
 
-        if (mag > 0.1) {
-            double angle = Math.atan2(vy, vx);
-            int eyeX = (int) (p.x + Math.cos(angle) * size / 3);
-            int eyeY = (int) (p.y + Math.sin(angle) * size / 3);
+        g.translate(p.x, p.y);
+        g.rotate(angle);
 
-            g.setColor(Color.WHITE);
-            g.fillOval(eyeX - 2, eyeY - 2, 4, 4);
-            g.setColor(Color.BLACK);
-            g.fillOval(eyeX - 1, eyeY - 1, 2, 2);
-        }
+        // Градиентное тело
+        GradientPaint gp = new GradientPaint(-15, 0, new Color(100, 200, 255),
+                15, 0, new Color(0, 120, 255));
+        g.setPaint(gp);
+        g.fill(new Ellipse2D.Double(-18, -10, 36, 20));
 
-        if (Settings.DEBUG_SHOW_RADII) {
-            drawDebugRadii(g, p, Settings.FISH_COLOR);
-        }
+        // Анимированный хвост
+        double tailWave = Math.sin(time * 0.012 + fish.id() * 0.5) * 5;
+        Polygon tail = new Polygon();
+        tail.addPoint(-18, 0);
+        tail.addPoint((int)(-32 - tailWave), -12);
+        tail.addPoint((int)(-32 - tailWave), 12);
+        g.setColor(new Color(0, 150, 255));
+        g.fill(tail);
+
+        // Глаз
+        g.setColor(Color.WHITE);
+        g.fillOval(10, -5, 8, 10);
+        g.setColor(Color.BLACK);
+        g.fillOval(13, -3, 4, 6);
+
+        g.rotate(-angle);
+        g.translate(-p.x, -p.y);
     }
 
-    private void drawPredator(Graphics2D g, EntityDTO.PredatorDTO predator) {
+    private void drawPredator(Graphics2D g, EntityDTO.PredatorDTO predator, long time) {
         Point p = predator.position();
-        int size = Settings.PREDATOR_SIZE;
-
-        g.setColor(Settings.PREDATOR_COLOR);
-        g.fill(new Ellipse2D.Double(p.x - size / 2.0, p.y - size / 2.0, size, size));
-
         double vx = predator.vx();
         double vy = predator.vy();
-        double mag = Math.hypot(vx, vy);
+        double angle = Math.atan2(vy, vx);
 
-        if (mag > 0.1) {
-            double angle = Math.atan2(vy, vx);
+        g.translate(p.x, p.y);
+        g.rotate(angle);
 
-            g.setColor(Color.WHITE);
-            int eye1X = (int) (p.x + Math.cos(angle + 0.4) * size / 3);
-            int eye1Y = (int) (p.y + Math.sin(angle + 0.4) * size / 3);
-            int eye2X = (int) (p.x + Math.cos(angle - 0.4) * size / 3);
-            int eye2Y = (int) (p.y + Math.sin(angle - 0.4) * size / 3);
+        // Тело акулы
+        GradientPaint gp = new GradientPaint(0, -18, new Color(220, 20, 60),
+                0, 18, new Color(139, 0, 0));
+        g.setPaint(gp);
+        g.fill(new RoundRectangle2D.Double(-30, -18, 60, 36, 25, 25));
 
-            g.fillOval(eye1X - 3, eye1Y - 3, 6, 6);
-            g.fillOval(eye2X - 3, eye2Y - 3, 6, 6);
+        // Спинной плавник
+        g.setColor(new Color(180, 0, 0));
+        Polygon dorsal = new Polygon();
+        dorsal.addPoint(0, -18);
+        dorsal.addPoint(20, -35);
+        dorsal.addPoint(15, -15);
+        g.fill(dorsal);
 
-            g.setColor(Color.BLACK);
-            g.fillOval(eye1X - 1, eye1Y - 1, 3, 3);
-            g.fillOval(eye2X - 1, eye2Y - 1, 3, 3);
+        // Злые глаза
+        g.setColor(Color.WHITE);
+        g.fillOval(22, -10, 12, 12);
+        g.fillOval(22, 2, 12, 12);
+        g.setColor(Color.RED.darker().darker());
+        g.fillOval(26, -7, 6, 6);
+        g.fillOval(26, 5, 6, 6);
+
+        // Зубы
+        g.setColor(Color.WHITE);
+        for (int i = 0; i < 10; i++) {
+            int x = 28 + i * 3;
+            int offset = (i % 2 == 0) ? -10 : -6;
+            g.fill(new Polygon(new int[]{x, x + 4, x + 8}, new int[]{0, offset, 0}, 3));
         }
 
-        if (Settings.DEBUG_SHOW_RADII) {
-            drawPanicRadius(g, p);
+        g.rotate(-angle);
+        g.translate(-p.x, -p.y);
+    }
+
+    private void drawEatEffects(Graphics2D g, SimulationModel model) {
+        for (Point p : model.getEatEffects()) {
+            int alpha = 255;
+            for (int i = 1; i <= 5; i++) {
+                g.setColor(new Color(255, 180, 0, alpha));
+                g.fillOval(p.x - i*15, p.y - i*15, i*30, i*30);
+                alpha -= 50;
+            }
         }
-    }
-
-    private void drawDebugRadii(Graphics2D g, Point p, Color base) {
-        g.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), 40));
-        g.drawOval(p.x - Settings.COHESION_RADIUS, p.y - Settings.COHESION_RADIUS,
-                Settings.COHESION_RADIUS * 2, Settings.COHESION_RADIUS * 2);
-        g.drawOval(p.x - Settings.ALIGNMENT_RADIUS, p.y - Settings.ALIGNMENT_RADIUS,
-                Settings.ALIGNMENT_RADIUS * 2, Settings.ALIGNMENT_RADIUS * 2);
-        g.drawOval(p.x - Settings.SEPARATION_RADIUS, p.y - Settings.SEPARATION_RADIUS,
-                Settings.SEPARATION_RADIUS * 2, Settings.SEPARATION_RADIUS * 2);
-    }
-
-    private void drawPanicRadius(Graphics2D g, Point p) {
-        g.setColor(new Color(255, 50, 50, 40));
-        g.drawOval(p.x - Settings.PANIC_RADIUS, p.y - Settings.PANIC_RADIUS,
-                Settings.PANIC_RADIUS * 2, Settings.PANIC_RADIUS * 2);
     }
 
     private void drawStats(Graphics2D g, int fishCount) {
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Consolas", Font.BOLD, 14));
-        g.drawString("Рыбок: " + fishCount, 10, 20);
-        g.drawString("SPACE — пауза | ESC — меню", 10, Settings.GAME_FIELD_HEIGHT - 10);
+        g.setColor(new Color(255, 255, 255, 200));
+        g.setFont(new Font("Consolas", Font.BOLD, 18));
+        g.drawString("Рыб в стае: " + fishCount, 15, 35);
+        g.setFont(new Font("Arial", Font.PLAIN, 14));
+        g.setColor(new Color(200, 200, 255));
+        g.drawString("SPACE — пауза | ESC — меню", 15, Settings.GAME_FIELD_HEIGHT - 15);
     }
 }

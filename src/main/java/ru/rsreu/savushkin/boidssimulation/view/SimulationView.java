@@ -110,8 +110,7 @@ public class SimulationView extends JPanel implements Subscriber {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (!showMainMenu && !showPauseMenu && state != null) {
-            renderer.render(g2d, state);
-        }
+            renderer.render(g2d, controller.getModel().getSimulationState(), controller.getModel());        }
 
         g2d.dispose();
     }
