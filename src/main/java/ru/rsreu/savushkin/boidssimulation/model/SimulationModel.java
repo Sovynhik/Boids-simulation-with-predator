@@ -1,46 +1,42 @@
 package ru.rsreu.savushkin.boidssimulation.model;
 
 import ru.rsreu.savushkin.boidssimulation.config.Settings;
+import ru.rsreu.savushkin.boidssimulation.dto.EntityDTO;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationSnapshot;
 import ru.rsreu.savushkin.boidssimulation.dto.SimulationState;
-import ru.rsreu.savushkin.boidssimulation.model.entity.FishEntity;
-import ru.rsreu.savushkin.boidssimulation.model.entity.PredatorEntity;
-import ru.rsreu.savushkin.boidssimulation.model.entity.RunnableEntity;
-import ru.rsreu.savushkin.boidssimulation.model.entity.Field;
-import ru.rsreu.savushkin.boidssimulation.model.task.RespawnTask;
+import ru.rsreu.savushkin.boidssimulation.model.entity.*;
 import ru.rsreu.savushkin.boidssimulation.view.Subscriber;
 
 import java.awt.Point;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class SimulationModel {
     private final Set<Subscriber> subscribers = Collections.synchronizedSet(new HashSet<>());
     private final CopyOnWriteArrayList<RunnableEntity> entities = new CopyOnWriteArrayList<>();
-    private PredatorEntity predator;
+    private final AtomicInteger idCounter = new AtomicInteger(0);
+
     private volatile boolean simulationOver = true;
     private volatile boolean paused = false;
-    private RespawnTask respawnTask;
-    private static int idCounter = 0;
 
     public synchronized void startNewSimulation() {
         stopAllEntities();
         entities.clear();
 
-        predator = createPredator();
+        PredatorEntity predator = createPredator();
         entities.add(predator);
         predator.start();
 
         for (int i = 0; i < Settings.INITIAL_FISH_COUNT; i++) {
-            FishEntity fish = new FishEntity(++idCounter, randomPointOnField(), this);
+            FishEntity fish = createFish();
             entities.add(fish);
             fish.start();
         }
 
         simulationOver = false;
         paused = false;
-        startRespawnTask();
         notifySubscribers();
     }
 
@@ -49,103 +45,82 @@ public class SimulationModel {
         entities.clear();
 
         if (state.getPredator() != null) {
-            predator = new PredatorEntity(
-                    state.getPredator().getId(),
-                    state.getPredator().getPosition(),
-                    this
-            );
-            predator.setVelocity(
-                    state.getPredator().getVelocityX(),
-                    state.getPredator().getVelocityY()
-            );
-            predator.setModel(this);
-            entities.add(predator);
-            predator.start();
+            var dto = state.getPredator();
+            PredatorEntity p = new PredatorEntity(dto.id(), new Point(dto.position()), this);
+            p.setVelocity(dto.vx(), dto.vy());
+            entities.add(p);
+            p.start();
         }
 
-        for (var fishState : state.getFishes()) {
-            FishEntity fish = new FishEntity(
-                    fishState.getId(),
-                    fishState.getPosition(),
-                    this
-            );
-            fish.setVelocity(
-                    fishState.getVelocityX(),
-                    fishState.getVelocityY()
-            );
-            fish.setModel(this);
+        for (EntityDTO.FishDTO dto : state.getFishes()) {
+            FishEntity fish = new FishEntity(dto.id(), new Point(dto.position()), this);
+            fish.setVelocity(dto.vx(), dto.vy());
             entities.add(fish);
             fish.start();
         }
 
         simulationOver = state.isSimulationOver();
         paused = false;
-        startRespawnTask();
         notifySubscribers();
     }
 
     public void finishSimulation() {
         simulationOver = true;
         stopAllEntities();
-        if (respawnTask != null) {
-            respawnTask.cancel();
-            respawnTask = null;
-        }
         notifySubscribers();
     }
 
     public void switchPause() {
         paused = !paused;
-        if (respawnTask != null) {
-            respawnTask.setPaused(paused);
-        }
         notifySubscribers();
     }
 
     public void update() {
         if (simulationOver || paused) return;
         applyCollisions();
-        checkRespawn();
+        checkAndRespawnFish();
         notifySubscribers();
     }
 
     private void applyCollisions() {
+        PredatorEntity predator = entities.stream()
+                .filter(e -> e instanceof PredatorEntity)
+                .map(e -> (PredatorEntity) e)
+                .findFirst()
+                .orElse(null);
+
         if (predator == null) return;
+
         List<RunnableEntity> toRemove = new ArrayList<>();
         for (RunnableEntity e : entities) {
             if (e instanceof FishEntity && predator.distanceTo(e) < Settings.EAT_RADIUS) {
                 toRemove.add(e);
             }
         }
-        for (RunnableEntity e : toRemove) {
+        toRemove.forEach(e -> {
             e.stop();
             entities.remove(e);
-        }
+        });
     }
 
-    private void checkRespawn() {
-        int fishCount = getFishCount();
+    private void checkAndRespawnFish() {
+        long fishCount = entities.stream().filter(e -> e instanceof FishEntity).count();
         if (fishCount < Settings.FISH_RESPAWN_THRESHOLD) {
-            for (int i = 0; i < Settings.FISH_RESPAWN_AMOUNT; i++) {
-                FishEntity fish = new FishEntity(++idCounter, randomPointOnField(), this);
+            int toAdd = Settings.FISH_RESPAWN_AMOUNT;
+            for (int i = 0; i < toAdd; i++) {
+                FishEntity fish = createFish();
                 entities.add(fish);
                 fish.start();
             }
         }
     }
 
-    public SimulationSnapshot createSnapshot() {
-        return new SimulationSnapshot(new ArrayList<>(entities), predator, Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT);
-    }
-
-    public void addEntity(RunnableEntity entity) {
-        entities.add(entity);
-        entity.start();
-        notifySubscribers();
+    private FishEntity createFish() {
+        return new FishEntity(idCounter.incrementAndGet(), randomPointOnField(), this);
     }
 
     private PredatorEntity createPredator() {
-        return new PredatorEntity(++idCounter, randomPointOnField(), this);
+        return new PredatorEntity(idCounter.incrementAndGet(), randomPointOnField(), this);
     }
 
     private Point randomPointOnField() {
@@ -154,45 +129,61 @@ public class SimulationModel {
     }
 
     private void stopAllEntities() {
-        for (RunnableEntity e : entities) e.stop();
+        entities.forEach(RunnableEntity::stop);
         entities.clear();
-        predator = null;
     }
 
-    private void startRespawnTask() {
-        if (respawnTask != null) respawnTask.cancel();
-        respawnTask = new RespawnTask(this);
-        new Thread(respawnTask, "Respawn-Thread").start();
-    }
+    public SimulationSnapshot createSnapshot() {
+        PredatorEntity predator = entities.stream()
+                .filter(e -> e instanceof PredatorEntity)
+                .map(e -> (PredatorEntity) e)
+                .findFirst()
+                .orElse(null);
 
-    private void notifySubscribers() {
-        subscribers.forEach(Subscriber::notifySubscriber);
+        return new SimulationSnapshot(
+                new ArrayList<>(entities),
+                predator,
+                Settings.GAME_FIELD_WIDTH,
+                Settings.GAME_FIELD_HEIGHT
+        );
     }
-
-    public void subscribe(Subscriber s) { subscribers.add(s); }
 
     public SimulationState getSimulationState() {
-        Set<FishEntity> fishes = entities.stream()
+        List<EntityDTO.FishDTO> fishDTOs = entities.stream()
                 .filter(e -> e instanceof FishEntity)
-                .map(e -> { FishEntity f = (FishEntity) e.clone(); f.setModel(null); return f; })
-                .collect(Collectors.toSet());
+                .map(e -> {
+                    FishEntity f = (FishEntity) e;
+                    return new EntityDTO.FishDTO(f.getId(), f.getPosition(), f.getVelocityX(), f.getVelocityY());
+                })
+                .collect(Collectors.toList());
 
-        PredatorEntity pred = null;
+        EntityDTO.PredatorDTO predatorDTO = null;
+        PredatorEntity predator = entities.stream()
+                .filter(e -> e instanceof PredatorEntity)
+                .map(e -> (PredatorEntity) e)
+                .findFirst()
+                .orElse(null);
+
         if (predator != null) {
-            pred = (PredatorEntity) predator.clone();
-            pred.setModel(null);
+            predatorDTO = new EntityDTO.PredatorDTO(
+                    predator.getId(),
+                    predator.getPosition(),
+                    predator.getVelocityX(),
+                    predator.getVelocityY()
+            );
         }
 
-        return SimulationState.Builder.newBuilder()
-                .fishes(fishes)
-                .predator(pred)
+        return SimulationState.Builder.create()
+                .fishes(fishDTOs)
+                .predator(predatorDTO)
                 .field(new Field(Settings.GAME_FIELD_WIDTH, Settings.GAME_FIELD_HEIGHT))
                 .simulationOver(simulationOver)
                 .build();
     }
 
-    public List<RunnableEntity> getEntities() { return List.copyOf(entities); }
-    public int getFishCount() { return (int) entities.stream().filter(e -> e instanceof FishEntity).count(); }
+    public void subscribe(Subscriber s) { subscribers.add(s); }
+    private void notifySubscribers() { subscribers.forEach(Subscriber::notifySubscriber); }
+
     public boolean isSimulationOver() { return simulationOver; }
     public boolean isPaused() { return paused; }
 }
